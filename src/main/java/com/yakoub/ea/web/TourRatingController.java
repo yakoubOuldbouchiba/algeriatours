@@ -7,6 +7,7 @@ import com.yakoub.ea.handlerMethodArgumentResolver.FilterParams;
 import com.yakoub.ea.handlerMethodArgumentResolver.OrFilterParams;
 import com.yakoub.ea.services.TourRatingService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -33,7 +34,7 @@ public class TourRatingController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public void createTourRating(Long tourId,
+    public void createTourRating(@PathVariable(value = "tourId") Long tourId,
                                  @RequestBody @Validated RatingDto ratingDto){
         this.tourRatingService.createTourRating(tourId , ratingDto.getCustomerId() , ratingDto.getScore() , ratingDto.getComment());
 
@@ -70,7 +71,7 @@ public class TourRatingController {
 
     @PatchMapping
     @ResponseStatus(HttpStatus.OK)
-    public RatingDto updateWithPatch(@PathVariable(value = "tourId") Long tourId ,@RequestBody @Validated RatingDto ratingDto){
+    public RatingDto updateWithPatch(@PathVariable(value = "tourId") Long tourId ,@RequestBody RatingDto ratingDto){
         return  new RatingDto(tourRatingService.updateSome(tourId , ratingDto));
     }
 
@@ -88,6 +89,12 @@ public class TourRatingController {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     @ExceptionHandler(NoSuchElementException.class)
     public String return404(NoSuchElementException ex){
+        return ex.getMessage();
+    }
+
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public String return500(DataIntegrityViolationException ex){
         return ex.getMessage();
     }
 }

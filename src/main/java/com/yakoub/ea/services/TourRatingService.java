@@ -9,6 +9,7 @@ import com.yakoub.ea.filter.factory.PageFactory;
 import com.yakoub.ea.repositories.TourRatingRepository;
 import com.yakoub.ea.repositories.TourRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -18,7 +19,6 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
@@ -40,7 +40,7 @@ public class TourRatingService {
 
 
     @Transactional
-    public void rateMany(Long tourId, Integer score, Integer customers[]) {
+    public void rateMany(Long tourId, Integer score, Integer customers[])  throws DataIntegrityViolationException {
         tourRepository.findById(tourId).ifPresent(tour -> {
             for (Integer c : customers) {
                 tourRatingRepository.save(new TourRating(tour, c, score));
@@ -90,7 +90,7 @@ public class TourRatingService {
         return  tourRatingRepository.save(tourRating);
     }
 
-    public void delete (Long tourId , Integer customerId){
+    public void delete (Long tourId , Integer customerId) throws NoSuchElementException{
         TourRating tourRating = verfiyTourRating( tourId, customerId);
         tourRatingRepository.delete(tourRating);
     }
