@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS  tour(
     description VARCHAR(2000) NOT NULL,
     blurb VARCHAR(2000) NOT NULL,
     bullets VARCHAR(2000) NOT NULL,
-    price VARCHAR(10) NOT NULL,
+    price NUMERIC(10, 2) NOT NULL,
     duration VARCHAR(32) NOT NULL,
     difficulty VARCHAR(16) NOT NULL,
     region VARCHAR(20) NOT NULL,

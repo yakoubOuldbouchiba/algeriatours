@@ -1,7 +1,6 @@
 package com.yakoub.ea.repositories;
 
 import com.yakoub.ea.entities.TourRating;
-import com.yakoub.ea.entities.TourRatingPk;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;

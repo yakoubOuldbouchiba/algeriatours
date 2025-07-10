@@ -3,9 +3,8 @@ package com.yakoub.ea.services;
 import com.yakoub.ea.dto.RatingDto;
 import com.yakoub.ea.entities.Tour;
 import com.yakoub.ea.entities.TourRating;
-import com.yakoub.ea.filter.clause.Clause;
-import com.yakoub.ea.filter.enums.Connecteur;
-import com.yakoub.ea.filter.factory.PageFactory;
+import com.yakoub.ea.filters.clause.Clause;
+import com.yakoub.ea.filters.specification.GenericSpecification;
 import com.yakoub.ea.repositories.TourRatingRepository;
 import com.yakoub.ea.repositories.TourRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,9 +12,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-
-
 
 import javax.transaction.Transactional;
 import java.util.List;
@@ -41,25 +39,18 @@ public class TourRatingService {
 
     @Transactional
     public void rateMany(Long tourId, Integer score, Integer customers[])  throws DataIntegrityViolationException {
-        tourRepository.findById(tourId).ifPresent(tour -> {
+        tourRepository.findById(Math.toIntExact(tourId)).ifPresent(tour -> {
             for (Integer c : customers) {
                 tourRatingRepository.save(new TourRating(tour, c, score));
             }
         });
     }
 
-    public Page<RatingDto> lookupRatings(Long tourId ,  List<Clause> filters1 , List<Clause> filters2, Pageable pageable){
-
+    public Page<RatingDto> lookupRatings(Long tourId , List<Clause> filters , Pageable pageable){
+        Specification<TourRating> specification = new GenericSpecification<>(filters);
         verfiyTour(tourId);
-        Page<TourRating> ratings;
-        if(filters1!=null && filters2 != null && !filters1.isEmpty() && !filters2.isEmpty()){
-            ratings = (new PageFactory<>(tourRatingRepository,filters1, filters2, pageable)).getPage();
-        }
-        else if(filters2 != null){
-            ratings = (new PageFactory<>(tourRatingRepository , filters2, Connecteur.Or , pageable)).getPage();
-        }else {
-            ratings = (new PageFactory<>(tourRatingRepository , filters1, Connecteur.And , pageable)).getPage();
-        }
+        Page<TourRating> ratings = tourRatingRepository.findAll(specification , pageable);
+
         return new PageImpl<>(
                 ratings.get().map(RatingDto::new).collect(Collectors.toList()),
                 pageable,
@@ -96,7 +87,7 @@ public class TourRatingService {
     }
 
     private Tour verfiyTour (Long tourId) throws NoSuchElementException {
-        return tourRepository.findById(tourId).orElseThrow(()->new NoSuchElementException("Tour does not exit"+tourId));
+        return tourRepository.findById(Math.toIntExact(tourId)).orElseThrow(()->new NoSuchElementException("Tour does not exit"+tourId));
     }
 
     private TourRating verfiyTourRating (Long tourId , Integer customerId) throws NoSuchElementException{

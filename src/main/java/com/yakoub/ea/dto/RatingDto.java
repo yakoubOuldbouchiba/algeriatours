@@ -1,7 +1,6 @@
 package com.yakoub.ea.dto;
 
 import com.yakoub.ea.entities.TourRating;
-import com.yakoub.ea.enums.Difficulty;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;

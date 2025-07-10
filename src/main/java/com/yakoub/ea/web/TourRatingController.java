@@ -2,9 +2,9 @@ package com.yakoub.ea.web;
 
 
 import com.yakoub.ea.dto.RatingDto;
-import com.yakoub.ea.filter.clause.Clause;
-import com.yakoub.ea.handlerMethodArgumentResolver.FilterParams;
-import com.yakoub.ea.handlerMethodArgumentResolver.OrFilterParams;
+
+import com.yakoub.ea.filters.clause.Clause;
+import com.yakoub.ea.filters.handlerMethodArgumentResolver.Critiria;
 import com.yakoub.ea.services.TourRatingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -50,9 +50,9 @@ public class TourRatingController {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public Page<RatingDto> findRatings(@PathVariable(value = "tourId") Long tourId , @FilterParams List<Clause> filters1 , @OrFilterParams List<Clause> filters2, Pageable pageable){
+    public Page<RatingDto> findRatings(@PathVariable(value = "tourId") Long tourId , @Critiria List<Clause> filters1 , Pageable pageable){
 
-        return tourRatingService.lookupRatings(tourId , filters1 , filters2 , pageable);
+        return tourRatingService.lookupRatings(tourId , filters1  , pageable);
     }
 
     @GetMapping(path = "/average")
