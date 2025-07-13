@@ -4,7 +4,7 @@ package com.yakoub.ea.filters.clause;
 
 
 
-import com.yakoub.ea.filters.creator.AttribueCreator;
+import com.yakoub.ea.filters.creator.AttributeCreator;
 import com.yakoub.ea.filters.creator.JoinCreator;
 import com.yakoub.ea.filters.enums.Operation;
 import com.yakoub.ea.filters.factory.ValueFactory;
@@ -13,7 +13,6 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,8 +45,8 @@ public class ClauseTwoArgs extends Clause {
 
     public static Predicate toPredicate(Root root, CriteriaBuilder criteriaBuilder, Clause clause) {
         ClauseTwoArgs clauseTwoArgsArg = (ClauseTwoArgs) clause;
-        Join joinMap = JoinCreator.createJoin(root, clause.getFiled());
-        String attribute = AttribueCreator.createAttribute(clause.getFiled());
+        Join joinMap = JoinCreator.createJoin(root, clause.getField());
+        String attribute = AttributeCreator.resolveAttributeName(clause.getField());
         List<Predicate> predicates = new ArrayList<>();
         try {
             if (joinMap == null) {
@@ -58,7 +57,7 @@ public class ClauseTwoArgs extends Clause {
                 predicates.add(criteriaBuilder.lessThanOrEqualTo(joinMap.get(attribute), (Comparable) ValueFactory.toValue(joinMap, attribute, clauseTwoArgsArg.getArg1())));
             }
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        } catch (IllegalArgumentException | ParseException | ClassNotFoundException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

@@ -1,9 +1,0 @@
-package com.yakoub.ea.filters.creator;
-
-public class AttribueCreator {
-    static public String createAttribute(String field) {
-        String[] args = field.split("\\.");
-        String attribute = args[args.length - 1];
-        return attribute;
-    }
-}

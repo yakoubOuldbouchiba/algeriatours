@@ -14,7 +14,6 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.springframework.util.StringUtils.hasText;
 
@@ -36,44 +35,44 @@ public class SortParamsArgumentResolver implements HandlerMethodArgumentResolver
      */
     @Override
     public Object resolveArgument(MethodParameter methodParameter, ModelAndViewContainer modelAndViewContainer, NativeWebRequest nativeWebRequest, WebDataBinderFactory webDataBinderFactory) throws Exception {
+        HttpServletRequest request = (HttpServletRequest) nativeWebRequest.getNativeRequest();
+
         int skip = 0;
         int take = 10;
-        String sort;
-        Optional<Sort> sortOptional = Optional.ofNullable(null);
-        HttpServletRequest httpRequest = (HttpServletRequest) nativeWebRequest.getNativeRequest();
-        
-        if (hasText(httpRequest.getParameter("sort")) && !httpRequest.getParameter("sort").equals("undefined")) {
-            sort = httpRequest.getParameter("sort");
-            sortOptional = Optional.ofNullable(Sort.by(RequestService.getOrders(sort)));
+
+        Sort sort = null;
+        if (isValid(request.getParameter("sort"))) {
+            sort = Sort.by(RequestService.getOrders(request.getParameter("sort")));
         }
-        
-        if (hasText(httpRequest.getParameter("customQueryParams")) && !httpRequest.getParameter("customQueryParams").equals("undefined")) {
+
+        if (isValid(request.getParameter("customQueryParams"))) {
             ObjectMapper mapper = new ObjectMapper();
-            Optional<Map<String, String>> params = Optional.ofNullable(mapper.readValue(httpRequest.getParameter("customQueryParams"), Map.class));
-            Optional<String> lazyData = params.map(mapParams -> mapParams.get("lazyData"));
-            if (lazyData.isPresent() && lazyData.orElse("LAZY").equals("ALL")) {
-                if (sortOptional.isPresent()) {
-                    return PageRequest.of(0, Integer.MAX_VALUE,sortOptional.get());
-                    //return SortedUnpaged.getInstance(sortOptional.get());
-                }
-                return Pageable.unpaged();
+            Map<String, String> params = mapper.readValue(request.getParameter("customQueryParams"), Map.class);
+            if ("ALL".equalsIgnoreCase(params.getOrDefault("lazyData", ""))) {
+                return sort != null
+                        ? PageRequest.of(0, Integer.MAX_VALUE, sort)
+                        : Pageable.unpaged();
             }
         }
-        if (hasText(httpRequest.getParameter("skip")) && !httpRequest.getParameter("skip").equals("undefined")) {
-            skip = Integer.parseInt(httpRequest.getParameter("skip"));
-        }
-        if (hasText(httpRequest.getParameter("take")) && !httpRequest.getParameter("take").equals("undefined")) {
-            take = Integer.parseInt(httpRequest.getParameter("take"));
-        }else {
-            if (sortOptional.isPresent()) {
-                //PageRequest.of(0, Integer.MAX_VALUE,sortOptional.get());
-                return PageRequest.of(0, Integer.MAX_VALUE,sortOptional.get());
+
+        try {
+            if (isValid(request.getParameter("skip"))) {
+                skip = Integer.parseInt(request.getParameter("skip"));
             }
-            return Pageable.unpaged();
+            if (isValid(request.getParameter("take"))) {
+                take = Integer.parseInt(request.getParameter("take"));
+            }
+        } catch (NumberFormatException ignored) {
+            // use defaults
         }
-        if (sortOptional.isPresent()) {
-            return PageRequest.of(skip / take, take, sortOptional.get());
-        }
-        return PageRequest.of(skip / take, take);
+
+        int page = skip / take;
+        return sort != null
+                ? PageRequest.of(page, take, sort)
+                : PageRequest.of(page, take);
+    }
+
+    private boolean isValid(String param) {
+        return hasText(param) && !"undefined".equalsIgnoreCase(param.trim());
     }
 }

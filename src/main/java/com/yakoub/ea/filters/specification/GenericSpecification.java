@@ -59,7 +59,7 @@ public class GenericSpecification<T> implements Specification<T> {
                     return;
                 }
                 try {
-                    predicates.add(Clause.toPredicate2(root,criteriaBuilder,clause));
+                    predicates.add(Clause.buildNullCheckPredicate(root,criteriaBuilder,clause));
                 } catch (IllegalArgumentException e) {
                     throw new RuntimeException(e);
                 }

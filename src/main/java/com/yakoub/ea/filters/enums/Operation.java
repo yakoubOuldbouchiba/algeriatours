@@ -4,6 +4,10 @@ package com.yakoub.ea.filters.enums;
 
 import com.yakoub.ea.execptions.BusinessException;
 
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 public enum Operation {
     Less("<"),
     LessOrEquals("<="),
@@ -25,17 +29,23 @@ public enum Operation {
     Operation(String label) {
         this.label = label;
     }
+    private static final Map<String, Operation> LABEL_MAP =
+            Stream.of(values()).collect(Collectors.toMap(op -> op.label, op -> op));
 
     public static Operation valueOfLabel(String label) throws BusinessException {
-        for (Operation e : values()) {
-            if (e.label.equals(label)) {
-                return e;
-            }
+        Operation op = LABEL_MAP.get(label);
+        if (op == null) {
+            throw new BusinessException("The operation '" + label + "' is not valid.");
         }
-        throw new BusinessException("the operation "+label+" is not  valid ");
+        return op;
     }
 
-    public static boolean isOperation(String label) throws BusinessException {
-        return valueOfLabel(label) != null;
+    public static boolean isValidOperation(String label) {
+        return LABEL_MAP.containsKey(label);
+    }
+
+    @Override
+    public String toString() {
+        return label;
     }
 }

@@ -4,22 +4,21 @@ package com.yakoub.ea.filters.clause;
 
 
 
-import com.yakoub.ea.filters.creator.AttribueCreator;
+import com.yakoub.ea.filters.creator.AttributeCreator;
 import com.yakoub.ea.filters.creator.JoinCreator;
 import com.yakoub.ea.filters.enums.Operation;
 import com.yakoub.ea.filters.factory.ValueFactory;
+import lombok.Getter;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.Join;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
+import javax.persistence.criteria.*;
+import javax.validation.constraints.NotEmpty;
 import java.text.ParseException;
 import java.util.Objects;
 
-
+@Getter
 public class ClauseOneArg  extends Clause {
-
-    private String arg;
+    @NotEmpty
+    private final String arg;
 
 
 
@@ -28,87 +27,49 @@ public class ClauseOneArg  extends Clause {
         this.arg = arg;
     }
 
-    public String getArg() {
-        return arg;
-    }
-
-    public void setArg(String arg) {
-        this.arg = arg;
-    }
-
-     public static Predicate toPredicate(Root root , CriteriaBuilder criteriaBuilder , Clause clause) throws ParseException, ClassNotFoundException {
-        ClauseOneArg clauseOneArg = (ClauseOneArg) clause;
-        Join joinMap  = JoinCreator.createJoin(root , clause.getFiled());
-        String attribute = AttribueCreator.createAttribute(clause.getFiled());
-        try {
-            switch (clauseOneArg.getOperation()){
-                case NotEquals:
-                    if(joinMap == null){
-                        return criteriaBuilder.notEqual(root.get(attribute)  , ValueFactory.toValue(root, attribute ,clauseOneArg.getArg()));
-                    }else {
-                        return criteriaBuilder.notEqual(joinMap.get(attribute) , ValueFactory.toValue(joinMap, attribute ,clauseOneArg.getArg()));
-                    }
-                case Endswith:
-                    if(joinMap == null){
-                        return criteriaBuilder.like(root.get(attribute)  , "%"+ValueFactory.toValue(root, attribute ,clauseOneArg.getArg()));
-                    }else {
-                        return criteriaBuilder.like(joinMap.get(attribute)  , "%"+ValueFactory.toValue(joinMap, attribute ,clauseOneArg.getArg()));
-                    }
-                case Startswith:
-                    if(joinMap == null){
-                        return criteriaBuilder.like(root.get(attribute)  , ValueFactory.toValue(root, attribute ,clauseOneArg.getArg())+"%");
-                    }else {
-                        return criteriaBuilder.like(joinMap.get(attribute)  , clauseOneArg.getArg()+"%");
 
 
-                    }
-                case Contains:
-                    if(joinMap == null){
-                        return criteriaBuilder.like(criteriaBuilder.upper(root.get(attribute))  , "%"+ValueFactory.toValue(root, attribute ,clauseOneArg.getArg()).toString().toUpperCase()+"%");
-                    }else {
-                        return criteriaBuilder.like(criteriaBuilder.upper(joinMap.get(attribute))  , "%"+ValueFactory.toValue(joinMap, attribute ,clauseOneArg.getArg()).toString().toUpperCase()+"%");
-                    }
-                case Notcontains:
-                    if(joinMap == null){
-                        return criteriaBuilder.notLike(criteriaBuilder.upper(root.get(attribute)) , "%"+ValueFactory.toValue(root, attribute ,clauseOneArg.getArg()).toString().toUpperCase()+"%");
-                    }else {
-                        return criteriaBuilder.notLike(criteriaBuilder.upper(joinMap.get(attribute))   , "%"+ValueFactory.toValue(joinMap, attribute ,clauseOneArg.getArg()).toString().toUpperCase()+"%");
-                    }
-                case Less:
-                    if(joinMap == null){
-                        return criteriaBuilder.lessThan(root.get(attribute)  ,  (Comparable) ValueFactory.toValue(root, attribute ,clauseOneArg.getArg()));
-                    }else {
-                        return criteriaBuilder.lessThan(joinMap.get(attribute)  , (Comparable) ValueFactory.toValue(joinMap, attribute ,clauseOneArg.getArg()));
-                    }
-
-                case LessOrEquals:
-                    if(joinMap == null){
-                        return criteriaBuilder.lessThanOrEqualTo(root.get(attribute)  ,  (Comparable) ValueFactory.toValue(root, attribute ,clauseOneArg.getArg()));
-                    }else {
-                        return criteriaBuilder.lessThanOrEqualTo(joinMap.get(attribute)  , (Comparable) ValueFactory.toValue(joinMap, attribute ,clauseOneArg.getArg()));
-                    }
-                case Greater:
-                    if(joinMap == null){
-                        return criteriaBuilder.greaterThan(root.get(attribute)  , (Comparable) ValueFactory.toValue(root, attribute ,clauseOneArg.getArg()));
-                    }else {
-                        return criteriaBuilder.greaterThan(joinMap.get(attribute)  , (Comparable) ValueFactory.toValue(joinMap, attribute ,clauseOneArg.getArg()));
-                    }
-                case GreaterOrEquals:
-                    if(joinMap == null){
-                        return criteriaBuilder.greaterThanOrEqualTo(root.get(attribute)  , (Comparable) ValueFactory.toValue(root, attribute ,clauseOneArg.getArg()));
-                    }else {
-                        return criteriaBuilder.greaterThanOrEqualTo(joinMap.get(attribute)  , (Comparable) ValueFactory.toValue(joinMap, attribute ,clauseOneArg.getArg()));
-                    }
-                default:
-                    if(joinMap == null){
-                        return criteriaBuilder.equal(root.get(attribute)  , ValueFactory.toValue(root, attribute ,clauseOneArg.getArg()));
-                    }else {
-                        return criteriaBuilder.equal(joinMap.get(attribute)  , ValueFactory.toValue(joinMap, attribute ,clauseOneArg.getArg()));
-                    }
-            }
-        }catch (IllegalArgumentException | ClassNotFoundException illegalArgumentException){
-            throw  illegalArgumentException;
-        }
+     public static Predicate toPredicate(Root<?> root , CriteriaBuilder criteriaBuilder , Clause clause) throws ParseException, ClassNotFoundException {
+        ClauseOneArg oneArg = (ClauseOneArg) clause;
+        Join<?, ?> join = JoinCreator.createJoin(root, clause.getField());
+         From<?, ?> from = (join != null)
+                 ? join
+                 : root;
+        String attribute = AttributeCreator.resolveAttributeName(clause.getField());
+        Path<?> path = from.get(attribute);
+         Object value;
+         try {
+             value = ValueFactory.toValue(from, attribute, oneArg.getArg());
+         } catch (Exception e) {
+             throw new RuntimeException(e);
+         }
+         return switch (oneArg.getOperation()) {
+             case NotEquals -> criteriaBuilder.notEqual(path, value);
+             case Equals -> criteriaBuilder.equal(path, value);
+             case Greater -> criteriaBuilder.greaterThan(asComparable(path), (Comparable<Object>) value);
+             case GreaterOrEquals ->  criteriaBuilder.greaterThanOrEqualTo(asComparable(path), (Comparable<Object>) value);
+             case Less -> criteriaBuilder.lessThan(asComparable(path), (Comparable<Object>) value);
+             case LessOrEquals -> criteriaBuilder.lessThanOrEqualTo(asComparable(path), (Comparable<Object>) value);
+             case Contains -> {
+                 Expression<String> expr = criteriaBuilder.upper(path.as(String.class));
+                 String pattern = "%" + value.toString().toUpperCase() + "%";
+                 yield criteriaBuilder.like(expr, pattern);
+             }
+             case Notcontains -> {
+                 Expression<String> expr = criteriaBuilder.upper(path.as(String.class));
+                 String pattern = "%" + value.toString().toUpperCase() + "%";
+                 yield criteriaBuilder.notLike(expr, pattern);
+             }
+             case Startswith -> {
+                 Expression<String> expr = path.as(String.class);
+                 yield criteriaBuilder.like(expr, value + "%");
+             }
+             case Endswith -> {
+                 Expression<String> expr = path.as(String.class);
+                 yield criteriaBuilder.like(expr, "%" + value);
+             }
+             default -> throw new UnsupportedOperationException("Unsupported operation: " + oneArg.getOperation());
+         };
     }
 
     @Override
@@ -124,4 +85,10 @@ public class ClauseOneArg  extends Clause {
     public int hashCode() {
         return Objects.hash(super.hashCode(), arg);
     }
+
+    @SuppressWarnings("unchecked")
+    private static Expression<Comparable<Object>> asComparable(Path<?> path) {
+        return (Expression<Comparable<Object>>) path;
+    }
+
 }

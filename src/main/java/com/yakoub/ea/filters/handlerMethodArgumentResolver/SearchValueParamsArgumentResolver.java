@@ -24,16 +24,27 @@ public class SearchValueParamsArgumentResolver implements HandlerMethodArgumentR
 
     @Override
     public Object resolveArgument(MethodParameter methodParameter, ModelAndViewContainer modelAndViewContainer, NativeWebRequest nativeWebRequest, WebDataBinderFactory webDataBinderFactory) throws Exception {
-        String searchOperation = null;
-        String searchValue = null;
-        String searchExpr = null;
-        HttpServletRequest httpRequest = (HttpServletRequest) nativeWebRequest.getNativeRequest();
-        if (hasText(httpRequest.getParameter("searchValue")) && !httpRequest.getParameter("searchExpr").equals("undefined")) {
-            searchValue = httpRequest.getParameter("searchValue");
-            searchOperation = httpRequest.getParameter("searchOperation");
-            searchExpr = httpRequest.getParameter("searchExpr");
-            return new ClauseOneArg(searchExpr, Operation.valueOfLabel(searchOperation), searchValue);
+        HttpServletRequest request = (HttpServletRequest) nativeWebRequest.getNativeRequest();
+
+        String value = request.getParameter("searchValue");
+        String expr = request.getParameter("searchExpr");
+        String op = request.getParameter("searchOperation");
+
+        if (isDefined(value) && isDefined(expr)) {
+            if (!isDefined(op)) op = "=";
+
+            return new ClauseOneArg(
+                    expr.trim(),
+                    Operation.valueOfLabel(op.trim()),
+                    value.trim()
+            );
         }
+
         return null;
+
+    }
+
+    private boolean isDefined(String param) {
+        return hasText(param) && !"undefined".equalsIgnoreCase(param.trim());
     }
 }

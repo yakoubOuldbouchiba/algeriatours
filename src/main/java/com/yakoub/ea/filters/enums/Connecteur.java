@@ -15,10 +15,12 @@ public enum Connecteur {
                 return e;
             }
         }
-        return null;
+        throw new IllegalArgumentException("No Connecteur found for label: " + label);
     }
 
-    public static boolean isOperation(String label) {
-        return valueOfLabel(label) != null;
+    @Override
+    public String toString() {
+        return label;
     }
+
 }

@@ -68,9 +68,9 @@ public class CritiriaParamsArgumentResolver implements HandlerMethodArgumentReso
         if (parts.length != 3)
             throw new BusinessException("Each filter must be in the form attribute:operation:value — got: " + filter);
 
-        String attribute = parts[0];
-        String op = parts[1];
-        String value = parts[2];
+        String attribute = parts[0].trim();
+        String op = parts[1].trim();
+        String value = parts[2].trim();
 
         Operation operation = Operation.valueOfLabel(op);
 

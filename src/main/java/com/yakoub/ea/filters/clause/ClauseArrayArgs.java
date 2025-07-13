@@ -4,17 +4,20 @@ package com.yakoub.ea.filters.clause;
 
 
 
-import com.yakoub.ea.filters.creator.AttribueCreator;
+import com.yakoub.ea.filters.creator.AttributeCreator;
 import com.yakoub.ea.filters.creator.JoinCreator;
 import com.yakoub.ea.filters.enums.Operation;
 import com.yakoub.ea.filters.factory.ValueFactory;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 
 import javax.persistence.criteria.*;
-import java.text.ParseException;
 import java.util.Arrays;
 
+@Getter
+@EqualsAndHashCode(callSuper = true)
 public class ClauseArrayArgs extends Clause {
-    private String[] args;
+    private final String[] args;
 
 
     public ClauseArrayArgs(String filed, Operation operation, String[] args) {
@@ -22,42 +25,33 @@ public class ClauseArrayArgs extends Clause {
         this.args = args;
     }
 
-    public String[] getArgs() {
-        return args;
-    }
 
-    public void setArgs(String[] args) {
-        this.args = args;
-    }
 
-    static public Predicate toPredicate(Root root, CriteriaBuilder criteriaBuilder, Clause clause) {
-        ClauseArrayArgs clauseArrayArgs = (ClauseArrayArgs) clause;
-        String attribute = AttribueCreator.createAttribute(clause.getFiled());
-        Expression<String> parentExpression = createParentExpression(root, clause);
-        try {
-            if (clauseArrayArgs.getOperation() == Operation.NotIn) {
-                parentExpression.in(Arrays.stream(clauseArrayArgs.getArgs()).map(arg -> {
+    static public Predicate toPredicate(Root<?> root, CriteriaBuilder criteriaBuilder, Clause clause) {
+        ClauseArrayArgs arrayClause = (ClauseArrayArgs) clause;
+        String attribute = AttributeCreator.resolveAttributeName(clause.getField());
+        if (arrayClause.getArgs() == null || arrayClause.getArgs().length == 0) {
+            return  criteriaBuilder.conjunction(); // or throw exception
+        }
+        Path<?>  parentExpression = createParentExpression(root, clause);
+        Predicate inPredicate = parentExpression.in(Arrays.stream(arrayClause.getArgs())
+                .map(arg -> {
                     try {
-                        return (Comparable) ValueFactory.toValue(root, attribute, arg);
-                    } catch (ClassNotFoundException | ParseException e) {
+                        return ValueFactory.toValue(root, attribute, arg);
+                    } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
                 }).toArray());
-                return criteriaBuilder.not(parentExpression.in(clauseArrayArgs.getArgs()));
-            }
-            return parentExpression.in(clauseArrayArgs.getArgs());
-        } catch (IllegalArgumentException illegalArgumentException) {
-            throw illegalArgumentException;
+
+        if (arrayClause.getOperation() == Operation.NotIn) {
+            return criteriaBuilder.not(inPredicate);
         }
+        return inPredicate;
     }
 
-    private static Expression<String> createParentExpression(Root root, Clause clause) {
-        Join joinMap = JoinCreator.createJoin(root, clause.getFiled());
-        String attribute = AttribueCreator.createAttribute(clause.getFiled());
-        if (joinMap == null) {
-            return root.get(attribute);
-        } else {
-            return joinMap.get(attribute);
-        }
+    private static Path<?> createParentExpression(Root<?> root, Clause clause) {
+        Join<?, ?> join = JoinCreator.createJoin(root, clause.getField());
+        String attribute = AttributeCreator.resolveAttributeName(clause.getField());
+        return (join != null ? join : root).get(attribute);
     }
 }
